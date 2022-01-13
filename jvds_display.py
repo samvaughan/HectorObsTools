@@ -588,7 +588,7 @@ if __name__ == "__main__":
 
     fig = plt.figure(figsize=(10,10))
     
-    fig.suptitle(f"SAMI Display of raw frame: {flat_file_Hector.name}",fontsize=15)
+    fig.suptitle(f"SAMI Display of raw frame: File {obs_number}",fontsize=15)
 
     ax = fig.add_subplot(1,1,1)
     ax.set_aspect('equal')
