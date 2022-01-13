@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     obs_number = args.file_number
 
-    config_filename = 'hector_display_config.yaml'
+    config_filename = 'hector_display_config_SWAPS.yaml'
     if args.config_file is not None:
         config_filename = args.config_file
 
@@ -55,8 +55,10 @@ if __name__ == "__main__":
 
     
     # Load some options
+    # If the sigma clip option is True in the config file, turn it on
+    # If it's False in the config file, check for the command line option
     sigma_clip = config['sigma_clip']
-    if (args.sigma_clip is not None):
+    if not sigma_clip:
         sigma_clip = args.sigma_clip
 
     if config['red_or_blue'] == 'blue':
@@ -78,6 +80,10 @@ if __name__ == "__main__":
     if not object_file_AAOmega.exists():
         raise FileNotFoundError(f"The AAomega file seems to not exist: {object_file_AAOmega} not found")
 
+
+    # Get the swaps dictionary
+    swaps = config['swaps']
+
     # Get the fibre tables and find the tramlines:
     object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = utils.get_alive_fibres(flat_file_AAOmega, object_file_AAOmega, sigma_clip=sigma_clip)
     object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = utils.get_alive_fibres(flat_file_Hector, object_file_Hector, sigma_clip=sigma_clip)
@@ -90,14 +96,12 @@ if __name__ == "__main__":
 
     fig = plt.figure(figsize=(10,10))
     
-    fig.suptitle(f"Hector raw data: {config['file_prefix']} frame {obs_number}",fontsize=15)
+    fig.suptitle(f"Hector raw data with hexabundle swaps: {config['file_prefix']} frame {obs_number}",fontsize=15)
 
     ax = fig.add_subplot(1,1,1)
     ax.set_aspect('equal')
 
     ax.add_patch(Circle((0,0), 264/2*2000, facecolor="#cccccc", edgecolor='#000000', zorder=-1))
-
-    swaps = dict(A="G", B="B", C="D",D="C", E="F", F="E", G="A", H="N", I="K", J="J", K="I", L="M", M="L", N="H", O="P", P="O", Q="Q", R="T", S="S", T="R", U="U")
 
     for Probe in list(string.ascii_uppercase[:21]):
 
@@ -143,10 +147,10 @@ if __name__ == "__main__":
         length = scale_factor * 1000
         line_hexabundle_tail = [(mean_x, mean_y), (mean_x + length * np.sin(rotation_angle), mean_y - length * np.cos(rotation_angle))]
 
-        #import ipdb; ipdb.set_trace()
+        #Plot the hexabundle tail
         ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=2, zorder=1, alpha=0.5)
 
-
+        # Add the collection of circles
         ax.add_collection(utils.display_ifu(x_rotated, y_rotated, mean_x, mean_y, scale_factor, Probe_data))
         ax.axis([-140000*2, 140000*2, -140000*2, 140000*2])
         plt.setp(ax.get_xticklabels(), visible=False)
