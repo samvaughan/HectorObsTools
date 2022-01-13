@@ -630,13 +630,16 @@ if __name__ == "__main__":
         x = 1 * (object_fibtab.field('FIB_PX')[mask])
         y = 1 * (object_fibtab.field('FIB_PY')[mask])
 
+        original_probe_angle = np.unique(object_fibtab.field('ANGS')[mask])
         angle = np.unique(swapped_object_fibtab.field('ANGS')[swapped_mask])
+
         assert len(angle) == 1, 'Must only have one angle per probe'
 
+        rotation_angle_original = original_probe_angle - np.pi/2
         rotation_angle = angle - np.pi/2
 
-        x_rotated = -1 * (np.cos(rotation_angle) * x - np.sin(rotation_angle) * y)
-        y_rotated = -1 * (np.sin(rotation_angle) * x + np.cos(rotation_angle) * y)
+        x_rotated = -1 * (np.cos(rotation_angle_original) * x - np.sin(rotation_angle_original) * y)
+        y_rotated = -1 * (np.sin(rotation_angle_original) * x + np.cos(rotation_angle_original) * y)
 
         length = scale_factor * 1000
         line_hexabundle_tail = [(mean_x, mean_y), (mean_x + length * np.sin(rotation_angle), mean_y - length * np.cos(rotation_angle))]
@@ -677,6 +680,5 @@ if __name__ == "__main__":
 
     print("---> END")
     #plt.show()
-    #fig.savefig(f"/Users/samvaughan/Desktop/rotation_plots/{object_file.stem}_rot_{rot_dict[f'{object_file.stem[-2:]}']}.pdf", bbox_inches='tight')
-    fig.savefig("swapped.pdf")
+    fig.savefig(f"/Users/samvaughan/Desktop/rotation_plots/{obs_number}_rot_{rot_dict[f'{obs_number}']}_SWAPPED.pdf", bbox_inches='tight')
     plt.close()
