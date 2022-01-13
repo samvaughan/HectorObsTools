@@ -97,6 +97,7 @@ if __name__ == "__main__":
 
     ax.add_patch(Circle((0,0), 264/2*2000, facecolor="#cccccc", edgecolor='#000000', zorder=-1))
 
+    swaps = dict(A="G", B="B", C="D",D="C", E="F", F="E", G="A", H="N", I="K", J="J", K="I", L="M", M="L", N="H", O="P", P="O", Q="Q", R="T", S="S", T="R", U="U")
 
     for Probe in list(string.ascii_uppercase[:21]):
 
@@ -146,7 +147,7 @@ if __name__ == "__main__":
         ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=2, zorder=1, alpha=0.5)
 
 
-        ax.add_collection(display_ifu(x_rotated, y_rotated, mean_x, mean_y, scale_factor, Probe_data))
+        ax.add_collection(utils.display_ifu(x_rotated, y_rotated, mean_x, mean_y, scale_factor, Probe_data))
         ax.axis([-140000*2, 140000*2, -140000*2, 140000*2])
         plt.setp(ax.get_xticklabels(), visible=False)
         plt.setp(ax.get_yticklabels(), visible=False)
