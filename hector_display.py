@@ -5,6 +5,7 @@ This module has quite a lot of fudges and magic numbers that work fine for the H
 but may not always work for other data sets.
 
 Edited by Jesse van de Sande Dec-2021
+Edited by Sam Vaughan Jan 2021
 
 """
 import numpy as np
@@ -358,36 +359,10 @@ def plot_guide_rotations(df):
 
 
 
-if __name__ == "__main__":
-    
+def get_alive_fibres(flat_file, object_file, IFU="unknown", sigma_clip=True, log=True, pix_waveband=100,     pix_start="unknown", figfile=None, plot_fibre_trace = False):
 
 
-    from pathlib import Path
-
-    # for ccd in [1, 3]:
-    #     for obs_number in [13, 14, 18]:
-    import argparse
-    parser = argparse.ArgumentParser()
-    # parser.add_argument("CCD")
-    parser.add_argument("file_number")
-    args = parser.parse_args()
-
-    # ccd = args.CCD
-    obs_number = args.file_number
-
-    flat_file_Hector = Path(f"/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_3/12jan30005.fits")
-    flat_file_AAOmega = Path(f"/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_1/12jan10005.fits")
-    object_file_Hector = Path(f"/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_3/12jan300{obs_number}.fits")
-    object_file_AAOmega = Path(f"/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_1/12jan100{obs_number}.fits")
-
-    rot_dict = {"13" : 400, "14" : 700, "18":900, "21":700, "22":700}
-
-
-
-# def main(flat_file, object_file, IFU="unknown", sigma_clip=False, log=True,
-#         pix_waveband=100, pix_start="unknown",figfile=None, plot_fibre_trace = False):
     """
-    #
     # "raw"
     #
     #   Takes in a raw flat field and a raw object frame. Performs a cut on the flat
@@ -438,148 +413,195 @@ if __name__ == "__main__":
     """
     
 
-    def get_alive_fibres(flat_file, object_file, IFU="unknown", sigma_clip=True, log=True, pix_waveband=100,     pix_start="unknown", figfile=None, plot_fibre_trace = False):
 
+    print("---> START")
+    print("--->")
+    print(("---> Object frame: "+str(object_file)))
+    print("--->")
+    
+    # Import flat field frame
+    flat = pf.open(flat_file)
+    flat_data = flat['Primary'].data
 
-        print("---> START")
-        print("--->")
-        print(("---> Object frame: "+str(object_file)))
-        print("--->")
+    # Import object frame
+    object_frame = pf.open(object_file)
+    object_data = object_frame['Primary'].data
+    object_fibtab = object_frame['MORE.FIBRES_IFU'].data
+    object_guidetab = object_frame['MORE.FIBRES_GUIDE'].data
+    object_guidetab = object_guidetab[object_guidetab['TYPE']=='G']
+    
+    # Range to find spatial cut
+    if pix_start != "unknown":
+        cut_loc_start = np.float(pix_start+5)/np.float(2048)+200
+        cut_locs = np.linspace(cut_loc_start,0.75,201)
+    else:
+        cut_locs = np.linspace(0.25,0.75,201)
+    
+    if flat['Primary'].header['INSTRUME'] == "AAOMEGA-HECTOR":
+        # Fibres B 120 and 175 are just fine, no idea why masked
+        object_fibtab.field('TYPE')[120-1] = "P"
+        object_fibtab.field('TYPE')[175-1] = "P"
+    
+        #fibre 637 is broken for all purposes
+        object_fibtab.field('TYPE')[637-1] = "U"
+
+    if flat['Primary'].header['INSTRUME'] == "SPECTOR":
+        #there is one broken fibre, can't identify so fudge one
+        object_fibtab.field('TYPE')[151-1] = "U"
         
-        # Import flat field frame
-        flat = pf.open(flat_file)
-        flat_data = flat['Primary'].data
-
-        # Import object frame
-        object_frame = pf.open(object_file)
-        object_data = object_frame['Primary'].data
-        object_fibtab = object_frame['MORE.FIBRES_IFU'].data
-        object_guidetab = object_frame['MORE.FIBRES_GUIDE'].data
-        object_guidetab = object_guidetab[object_guidetab['TYPE']=='G']
         
-        # Range to find spatial cut
-        if pix_start != "unknown":
-            cut_loc_start = np.float(pix_start+5)/np.float(2048)+200
-            cut_locs = np.linspace(cut_loc_start,0.75,201)
+    #take a record of all alive fibres
+    naliveP = np.squeeze(np.where( (object_fibtab.field('TYPE')=="P")))
+    naliveS = np.squeeze(np.where( (object_fibtab.field('TYPE')=="S")))
+    ndeadU = np.squeeze(np.where( (object_fibtab.field('TYPE')=="U")))
+    ndeadN = np.squeeze(np.where( (object_fibtab.field('TYPE')=="N")))
+    nalive = np.squeeze(np.where((object_fibtab.field('TYPE')=="P") |
+                                 (object_fibtab.field('TYPE')=="S")))
+    
+    if ndeadU is None:
+        ndeadU = 0
+    
+    print('alive fibres:   ',np.size(naliveP),' + ',np.size(naliveS),' = ',np.size(naliveP)+np.size(naliveS))
+    print('offline fibres:   ',np.size(ndeadU),' + ', np.size(ndeadN),' = ',np.size(ndeadU)+np.size(ndeadN))
+    
+    print("HBundle where deadU",(object_fibtab.field('SPAX_ID')[ndeadU]))
+    print("Fibre where deadU",(object_fibtab.field('SPEC_ID')[ndeadU]))
+    print("HBundle where deadN",(object_fibtab.field('SPAX_ID')[ndeadN]))
+    print("Fibre where deadN",(object_fibtab.field('SPEC_ID')[ndeadN]))
+    
+    if flat['Primary'].header['INSTRUME'] == "AAOMEGA-HECTOR":
+        fitlim = 0.1
+    if flat['Primary'].header['INSTRUME'] == "SPECTOR":
+            fitlim = 0.075
+            
+    print("---> Finding suitable cut along spatial dimension...")
+    # Check each spatial slice until number of alive fibres (peaks) have been found
+    for cut_loc in cut_locs:
+        # perform cut along spatial direction
+        flat_cut = flat_data[:,int(np.shape(flat_data)[1]*cut_loc)]
+        flat_cut_leveled = flat_cut - fitlim*np.max(flat_cut)
+        flat_cut_leveled[flat_cut_leveled < 0] = 0.
+        # find peaks (fibres)
+        peaks = peakdetect(flat_cut_leveled, lookahead = 2)
+        Npeaks = np.shape(peaks[0])[0]
+        #stop when the number matches the expecte number of #fibres
+        if Npeaks == np.size(naliveP)+np.size(naliveS): 
+            break
         else:
-            cut_locs = np.linspace(0.25,0.75,201)
+            continue
+    
+    print(("---> Spatial cut at pixel number: ",int(cut_loc*2048)))
+    print(("---> Number of waveband pixels: ",pix_waveband))
+    print(("---> Number of fibres found: ",np.shape(peaks[0])[0]))
+    print("--->")    
+    
+    if plot_fibre_trace:
+        tmp_peaks = np.array(peaks[0])    
+        fig, ax = plt.subplots(figsize=(30,10))
+        ax.plot(np.arange(len(flat_cut_leveled)),flat_cut_leveled,'r')
+        c = ax.scatter(tmp_peaks[:,0], tmp_peaks[:,1], s=10, c='b')
+        for ai in np.arange(len(tmp_peaks[:,0])):
+            ax.annotate(str(ai+1),(tmp_peaks[ai,0], tmp_peaks[ai,1]),c='k',fontsize=10)
+        plt.show()
+    
+    print("--->")
         
-        if flat['Primary'].header['INSTRUME'] == "AAOMEGA-HECTOR":
-            # Fibres B 120 and 175 are just fine, no idea why masked
-            object_fibtab.field('TYPE')[120-1] = "P"
-            object_fibtab.field('TYPE')[175-1] = "P"
-        
-            #fibre 637 is broken for all purposes
-            object_fibtab.field('TYPE')[637-1] = "U"
-
-        if flat['Primary'].header['INSTRUME'] == "SPECTOR":
-            #there is one broken fibre, can't identify so fudge one
-            object_fibtab.field('TYPE')[151-1] = "U"
-            
-            
-        #take a record of all alive fibres
-        naliveP = np.squeeze(np.where( (object_fibtab.field('TYPE')=="P")))
-        naliveS = np.squeeze(np.where( (object_fibtab.field('TYPE')=="S")))
-        ndeadU = np.squeeze(np.where( (object_fibtab.field('TYPE')=="U")))
-        ndeadN = np.squeeze(np.where( (object_fibtab.field('TYPE')=="N")))
-        nalive = np.squeeze(np.where((object_fibtab.field('TYPE')=="P") |
-                                     (object_fibtab.field('TYPE')=="S")))
-        
-        if ndeadU is None:
-            ndeadU = 0
-        
-        print('alive fibres:   ',np.size(naliveP),' + ',np.size(naliveS),' = ',np.size(naliveP)+np.size(naliveS))
-        print('offline fibres:   ',np.size(ndeadU),' + ', np.size(ndeadN),' = ',np.size(ndeadU)+np.size(ndeadN))
-        
-        print("HBundle where deadU",(object_fibtab.field('SPAX_ID')[ndeadU]))
-        print("Fibre where deadU",(object_fibtab.field('SPEC_ID')[ndeadU]))
-        print("HBundle where deadN",(object_fibtab.field('SPAX_ID')[ndeadN]))
-        print("Fibre where deadN",(object_fibtab.field('SPEC_ID')[ndeadN]))
-        
-        if flat['Primary'].header['INSTRUME'] == "AAOMEGA-HECTOR":
-            fitlim = 0.1
-        if flat['Primary'].header['INSTRUME'] == "SPECTOR":
-                fitlim = 0.075
-                
-        print("---> Finding suitable cut along spatial dimension...")
-        # Check each spatial slice until number of alive fibres (peaks) have been found
-        for cut_loc in cut_locs:
-            # perform cut along spatial direction
-            flat_cut = flat_data[:,int(np.shape(flat_data)[1]*cut_loc)]
-            flat_cut_leveled = flat_cut - fitlim*np.max(flat_cut)
-            flat_cut_leveled[flat_cut_leveled < 0] = 0.
-            # find peaks (fibres)
-            peaks = peakdetect(flat_cut_leveled, lookahead = 2)
-            Npeaks = np.shape(peaks[0])[0]
-            #stop when the number matches the expecte number of #fibres
-            if Npeaks == np.size(naliveP)+np.size(naliveS): 
-                break
-            else:
-                continue
-        
-        print(("---> Spatial cut at pixel number: ",int(cut_loc*2048)))
-        print(("---> Number of waveband pixels: ",pix_waveband))
-        print(("---> Number of fibres found: ",np.shape(peaks[0])[0]))
-        print("--->")    
-        
-        if plot_fibre_trace:
-            tmp_peaks = np.array(peaks[0])    
-            fig, ax = plt.subplots(figsize=(30,10))
-            ax.plot(np.arange(len(flat_cut_leveled)),flat_cut_leveled,'r')
-            c = ax.scatter(tmp_peaks[:,0], tmp_peaks[:,1], s=10, c='b')
-            for ai in np.arange(len(tmp_peaks[:,0])):
-                ax.annotate(str(ai+1),(tmp_peaks[ai,0], tmp_peaks[ai,1]),c='k',fontsize=10)
-            plt.show()
-        
+    # If the right amount of fibres can't be found then exit script. 
+    if Npeaks != len(naliveP)+len(naliveS):
+        raise ValueError("---> Can't find right amount of fibres. Check [1] Flat Field is correct [2] Flat Field is supplied as the first variable in the function. If 1+2 are ok then use the 'pix_start' variable and set it at least 10 pix beyond the previous value (see terminal for value)")
+    
+    # Location of fibre peaks for linear tramline
+    tram_loc=[]
+    for i in np.arange(np.shape(peaks[0])[0]):
+        tram_loc.append(peaks[0][i][0])
+    
+    
+    # Perform cut along spatial direction at same position as cut_loc
+    object_cut = object_data[:,int(np.shape(object_data)[1]*cut_loc)-
+                             int(pix_waveband/2):int(np.shape(object_data)[1]*cut_loc)+int(pix_waveband/2)]
+    
+    # "Sigma clip" to get set bad pixels as row median value
+    if sigma_clip == True:
+        print("---> Performing 'Sigma-clip'... (~20s)")
+        for i in np.arange(np.shape(object_cut)[0]):
+            for j in np.arange(np.shape(object_cut)[1]):
+                med = np.median(object_cut[i,:])
+                err = np.absolute((object_cut[i,j]-med)/med)
+                if err > 0.25:
+                    object_cut[i,j] = med
         print("--->")
-            
-        # If the right amount of fibres can't be found then exit script. 
-        if Npeaks != len(naliveP)+len(naliveS):
-            raise ValueError("---> Can't find right amount of fibres. Check [1] Flat Field is correct [2] Flat Field is supplied as the first variable in the function. If 1+2 are ok then use the 'pix_start' variable and set it at least 10 pix beyond the previous value (see terminal for value)")
-        
-        # Location of fibre peaks for linear tramline
-        tram_loc=[]
-        for i in np.arange(np.shape(peaks[0])[0]):
-            tram_loc.append(peaks[0][i][0])
-        
-        
-        # Perform cut along spatial direction at same position as cut_loc
-        object_cut = object_data[:,int(np.shape(object_data)[1]*cut_loc)-
-                                 int(pix_waveband/2):int(np.shape(object_data)[1]*cut_loc)+int(pix_waveband/2)]
-        
-        # "Sigma clip" to get set bad pixels as row median value
-        if sigma_clip == True:
-            print("---> Performing 'Sigma-clip'... (~20s)")
-            for i in np.arange(np.shape(object_cut)[0]):
-                for j in np.arange(np.shape(object_cut)[1]):
-                    med = np.median(object_cut[i,:])
-                    err = np.absolute((object_cut[i,j]-med)/med)
-                    if err > 0.25:
-                        object_cut[i,j] = med
-            print("--->")
-        
-        # Collapse spectral dimension
-        object_cut_sum = np.nansum(object_cut,axis=1)
-        
-        # Extract intensities at fibre location and log
-        object_spec = object_cut_sum[tram_loc]
-        
-        #provide a tracer array to guide tram_loc to fibre id
-        spec_id_alive = np.arange(object_fibtab.field('SPEC_ID')[-1])*0 #+ np.NaN
-        spec_id_alive[nalive] = np.arange(Npeaks)
+    
+    # Collapse spectral dimension
+    object_cut_sum = np.nansum(object_cut,axis=1)
+    
+    # Extract intensities at fibre location and log
+    object_spec = object_cut_sum[tram_loc]
+    
+    #provide a tracer array to guide tram_loc to fibre id
+    spec_id_alive = np.arange(object_fibtab.field('SPEC_ID')[-1])*0 #+ np.NaN
+    spec_id_alive[nalive] = np.arange(Npeaks)
 
-        return object_fibtab, object_guidetab, object_spec, spec_id_alive
+    return object_fibtab, object_guidetab, object_spec, spec_id_alive
 
 
-    # if flat['Primary'].header['INSTRUME'] == "AAOMEGA-HECTOR":
-    #     #name of probes for AAOmega
-    #     Probe_list = ['A','B','C','D','E','F','G','H']
-        
-    # if flat['Primary'].header['INSTRUME'] == "SPECTOR":
-    #     #name of probes for AAOmega
-    #     Probe_list = ['I','J','K','L','M','N','O','P','Q','R','S','T','U']
+
+if __name__ == "__main__":
+    
+
+    import yaml
+    from pathlib import Path
+    import argparse
+    parser = argparse.ArgumentParser()
+    # parser.add_argument("CCD")
+    parser.add_argument("file_number", type=int)
+    parser.add_argument("--config-file")
+    parser.add_argument("--outfile")
+    parser.add_argument("-s", "--sigma-clip", action='store_true')
+    args = parser.parse_args()
+
+    # ccd = args.CCD
+    #flat_number = args.flat_number
+    obs_number = args.file_number
+
+    config_filename = 'hector_display_config.yaml'
+    if args.config_file is not None:
+        config_filename = args.config_file
+
+    try:
+        with open(config_filename, 'r') as f:
+            config = yaml.safe_load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Config file {config_filename} does not exist!")
 
     
+    # Load some options
+    sigma_clip = config['sigma_clip']
+    if (args.sigma_clip is not None):
+        sigma_clip = args.sigma_clip
+
+    if config['red_or_blue'] == 'blue':
+        hector_ccd = 3
+        aaomega_ccd = 1
+    elif config['red_or_blue'] == 'red':
+        hector_ccd = 4
+        aaomega_ccd = 2
+    else:
+        raise NameError(f"The red_or_blue value must be either 'red' or blue': currently {config['red_or_blue']}")
+
+    flat_file_Hector = Path(config['flat_file_Hector'])
+    flat_file_AAOmega = Path(config['flat_file_AAOmega'])
+    object_file_Hector = Path(config['data_dir']) / f"ccd_{hector_ccd}" / f"{config['file_prefix']}{hector_ccd}{obs_number:04}.fits"
+    object_file_AAOmega = Path(config['data_dir']) / f"ccd_{aaomega_ccd}" / f"{config['file_prefix']}{aaomega_ccd}{obs_number:04}.fits"
+
+    if not object_file_Hector.exists():
+        raise FileNotFoundError(f"The Hector file seems to not exist: {object_file_Hector} not found")
+    if not object_file_AAOmega.exists():
+        raise FileNotFoundError(f"The AAomega file seems to not exist: {object_file_AAOmega} not found")
+
+    # Get the fibre tables and find the tramlines:
+    object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = get_alive_fibres(flat_file_AAOmega, object_file_AAOmega, sigma_clip=sigma_clip)
+    object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = get_alive_fibres(flat_file_Hector, object_file_Hector, sigma_clip=sigma_clip)
+
     # Plot the data
     print("---> Plotting...")
     print("--->")
@@ -588,17 +610,13 @@ if __name__ == "__main__":
 
     fig = plt.figure(figsize=(10,10))
     
-    fig.suptitle(f"SAMI Display of raw frame: File {obs_number}",fontsize=15)
+    fig.suptitle(f"Hector raw data: {config['file_prefix']} frame {obs_number}",fontsize=15)
 
     ax = fig.add_subplot(1,1,1)
     ax.set_aspect('equal')
 
     ax.add_patch(Circle((0,0), 264/2*2000, facecolor="#cccccc", edgecolor='#000000', zorder=-1))
 
-    swaps = dict(A="G", B="B", C="D",D="C", E="F", F="E", G="A", H="N", I="K", J="J", K="I", L="M", M="L", N="H", O="P", P="O", Q="Q", R="T", S="S", T="R", U="U")
-
-    object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = get_alive_fibres(flat_file_AAOmega, object_file_AAOmega)
-    object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = get_alive_fibres(flat_file_Hector, object_file_Hector)
 
     for Probe in list(string.ascii_uppercase[:21]):
 
@@ -663,6 +681,9 @@ if __name__ == "__main__":
     # #fig.show()
 
     print("---> END")
-    #plt.show()
-    fig.savefig(f"/Users/samvaughan/Desktop/rotation_plots/{obs_number}_rot_{rot_dict[f'{obs_number}']}.pdf", bbox_inches='tight')
-    plt.close()
+    
+    if args.outfile is not None:
+        fig.savefig(Path(args.outfile), bbox_inches='tight')
+    else:
+        plt.show()
+    #plt.close()

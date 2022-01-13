@@ -1,0 +1,16 @@
+
+# Are we looking at the blue arms or the red arms?
+# Until Hector red is fixed, this should be set to 'blue'
+red_or_blue : 'blue'
+
+flat_file_Hector : "/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_3/12jan30005.fits"
+flat_file_AAOmega : "/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_1/12jan10005.fits"
+
+# Now load the object file
+# We need the directory where the ccd folders are (e.g. in this folder there should be ccd_1, ccd_2, ccd_3, etc)
+data_dir : "/Volumes/OtherFiles/Science/Hector/Observations/220112"
+# The prefix of every file- probably the date, e.g. 12jan
+file_prefix : "12jan" 
+
+# Note that these options can be overwritten from the command line
+sigma_clip : True # use --sigma-clip or -s on the command line
