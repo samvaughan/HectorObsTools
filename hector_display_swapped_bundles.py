@@ -105,36 +105,52 @@ if __name__ == "__main__":
         else:
             object_fibtab, object_guidetab, object_spec, spec_id_alive = object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H
 
+
+        swapped_probe = swaps[Probe]
+
+        if swapped_probe in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
+            swapped_object_fibtab, swapped_object_guidetab, swapped_object_spec, swapped_spec_id_alive = object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A
+        else:
+            swapped_object_fibtab, swapped_object_guidetab, swapped_object_spec, swapped_spec_id_alive = object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H
+
+        print(f"Probe {Probe} is now in position {swapped_probe}")
+        #print(f"Probe = {Probe}, swapped with {swapped_probe}")
         mask = (object_fibtab.field('TYPE')=="P") & (object_fibtab.field('SPAX_ID')==Probe)
+        swapped_mask = (swapped_object_fibtab.field('TYPE')=="P") & (swapped_object_fibtab.field('SPAX_ID')==swapped_probe)
+        
         Probe_data = object_spec[spec_id_alive[mask]]
 
         #mask = np.logical_and(object_fibtab.field('TYPE')=="P",\object_fibtab['SPAX_ID']==Probe)
 
-        mean_x = np.mean(object_fibtab.field('MAGX')[mask])
-        mean_y = np.mean(object_fibtab.field('MAGY')[mask])
+        mean_x = np.mean(swapped_object_fibtab.field('MAGX')[swapped_mask])
+        mean_y = np.mean(swapped_object_fibtab.field('MAGY')[swapped_mask])
 
         x = 1 * (object_fibtab.field('FIB_PX')[mask])
         y = 1 * (object_fibtab.field('FIB_PY')[mask])
 
-        angle = np.unique(object_fibtab.field('ANGS')[mask])
+        original_probe_angle = np.unique(object_fibtab.field('ANGS')[mask])
+        angle = np.unique(swapped_object_fibtab.field('ANGS')[swapped_mask])
+
         assert len(angle) == 1, 'Must only have one angle per probe'
 
+        rotation_angle_original = original_probe_angle - np.pi/2
         rotation_angle = angle - np.pi/2
 
-        x_rotated = -1 * (np.cos(rotation_angle) * x - np.sin(rotation_angle) * y)
-        y_rotated = -1 * (np.sin(rotation_angle) * x + np.cos(rotation_angle) * y)
+        x_rotated = -1 * (np.cos(rotation_angle_original) * x - np.sin(rotation_angle_original) * y)
+        y_rotated = -1 * (np.sin(rotation_angle_original) * x + np.cos(rotation_angle_original) * y)
 
         length = scale_factor * 1000
         line_hexabundle_tail = [(mean_x, mean_y), (mean_x + length * np.sin(rotation_angle), mean_y - length * np.cos(rotation_angle))]
+
+        #import ipdb; ipdb.set_trace()
         ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=2, zorder=1, alpha=0.5)
 
 
-        ax.add_collection(utils.display_ifu(x_rotated, y_rotated, mean_x, mean_y, scale_factor, Probe_data))
+        ax.add_collection(display_ifu(x_rotated, y_rotated, mean_x, mean_y, scale_factor, Probe_data))
         ax.axis([-140000*2, 140000*2, -140000*2, 140000*2])
         plt.setp(ax.get_xticklabels(), visible=False)
         plt.setp(ax.get_yticklabels(), visible=False)
-        ax.text(mean_x, mean_y - scale_factor*750*2, "Probe " + str(Probe),\
-                verticalalignment="bottom", horizontalalignment='center')
+        ax.text(mean_x, mean_y - scale_factor*750*2, f"Probe {Probe} in position {swapped_probe}",               verticalalignment="bottom", horizontalalignment='center')
 
 
 
