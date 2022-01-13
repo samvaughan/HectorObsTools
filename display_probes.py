@@ -79,8 +79,8 @@ if __name__ == "__main__":
         raise FileNotFoundError(f"The AAomega file seems to not exist: {object_file_AAOmega} not found")
 
     # Get the fibre tables and find the tramlines:
-    object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = utils.get_alive_fibres(flat_file_AAOmega, object_file_AAOmega, sigma_clip=sigma_clip)
-    object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = utils.get_alive_fibres(flat_file_Hector, object_file_Hector, sigma_clip=sigma_clip)
+    object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = utils.get_alive_fibres(flat_file_AAOmega, object_file_AAOmega, sigma_clip=sigma_clip, IFU="unknown", log=True, pix_waveband=100, pix_start="unknown", plot_fibre_trace = False)
+    object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = utils.get_alive_fibres(flat_file_Hector, object_file_Hector, sigma_clip=sigma_clip, IFU="unknown", log=True, pix_waveband=100, pix_start="unknown", plot_fibre_trace = False)
 
     # Plot the data
     print("---> Plotting...")
@@ -148,12 +148,7 @@ if __name__ == "__main__":
         line_hexabundle_tail = [(hexabundle_x, hexabundle_y), (hexabundle_x + length * np.sin(rotation_angle), hexabundle_y - length * np.cos(rotation_angle))]
         ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=1, zorder=1)
 
-
-    ax.arrow(200000,200000,0,30000, facecolor="#aa0000", edgecolor='#aa0000', width=100)
-    ax.text(201000,116000*2, 'North', verticalalignment="bottom", horizontalalignment='left')
-
-    ax.arrow(200000,200000,30000,0, facecolor="#aa0000", edgecolor='#aa0000', width=0)
-    ax.text(116000*2,201000, 'East', verticalalignment="bottom", horizontalalignment='left')
+    ax = utils.add_NE_arrows(ax)
 
     plt.tight_layout()
     # if figfile:

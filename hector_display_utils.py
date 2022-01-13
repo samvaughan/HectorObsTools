@@ -349,7 +349,7 @@ def plot_guide_rotations(df):
 
 
 
-def get_alive_fibres(flat_file, object_file, IFU="unknown", sigma_clip=True, log=True, pix_waveband=100,     pix_start="unknown", figfile=None, plot_fibre_trace = False):
+def get_alive_fibres(flat_file, object_file, IFU="unknown", sigma_clip=True, log=True, pix_waveband=100, pix_start="unknown", figfile=None, plot_fibre_trace = False):
 
 
     """
@@ -532,3 +532,17 @@ def get_alive_fibres(flat_file, object_file, IFU="unknown", sigma_clip=True, log
     spec_id_alive[nalive] = np.arange(Npeaks)
 
     return object_fibtab, object_guidetab, object_spec, spec_id_alive
+
+
+def add_NE_arrows(ax):
+    """
+    Add North and East directions to the plot
+    Thankfully they're easy because N is down and E is R
+    """
+    ax.arrow(200000,200000,0,-30000, facecolor="#aa0000", edgecolor='#aa0000', width=100)
+    ax.text(201000,116000*2, 'North', verticalalignment="bottom", horizontalalignment='left')
+
+    ax.arrow(200000,200000,30000,0, facecolor="#aa0000", edgecolor='#aa0000', width=0)
+    ax.text(116000*2,201000, 'East', verticalalignment="bottom", horizontalalignment='left')
+
+    return ax

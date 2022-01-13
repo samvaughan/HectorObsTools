@@ -169,13 +169,8 @@ if __name__ == "__main__":
         line_hexabundle_tail = [(hexabundle_x, hexabundle_y), (hexabundle_x + length * np.sin(rotation_angle), hexabundle_y - length * np.cos(rotation_angle))]
         ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=1, zorder=1)
 
-
-    ax.arrow(200000,200000,0,30000, facecolor="#aa0000", edgecolor='#aa0000', width=100)
-    ax.text(201000,116000*2, 'North', verticalalignment="bottom", horizontalalignment='left')
-
-    ax.arrow(200000,200000,30000,0, facecolor="#aa0000", edgecolor='#aa0000', width=0)
-    ax.text(116000*2,201000, 'East', verticalalignment="bottom", horizontalalignment='left')
-
+    ax = utils.add_NE_arrows(ax)
+    
     plt.tight_layout()
     # if figfile:
     #     plt.savefig(figfile, bbox_inches='tight', pad_inches=0.3)
