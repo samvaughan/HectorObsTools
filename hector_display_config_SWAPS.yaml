@@ -1,6 +1,6 @@
 
-# Are we looking at the blue arms or the red arms?
-# Until Hector red is fixed, this should be set to 'blue'
+# Are we looking at the blue arms or the red arms? E.g. CCDs 1 and 3 or CCDs 2 and 4
+# Until the Hector red arm is fixed, this should be set to 'blue'
 red_or_blue : 'blue'
 
 flat_file_Hector : "/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_3/12jan30005.fits"

@@ -539,10 +539,32 @@ def add_NE_arrows(ax):
     Add North and East directions to the plot
     Thankfully they're easy because N is down and E is R
     """
-    ax.arrow(200000,200000,0,-30000, facecolor="#aa0000", edgecolor='#aa0000', width=100)
-    ax.text(201000,116000*2, 'North', verticalalignment="bottom", horizontalalignment='left')
+    arrow_centre_x = 200000
+    arrow_centre_y = 260000
+    arrow_length = 30000
+    ax.arrow(arrow_centre_x,arrow_centre_y,0,-arrow_length, facecolor="#aa0000", edgecolor='#aa0000', width=1000)
+    ax.annotate('North', xy=(arrow_centre_x,arrow_centre_y - arrow_length - 2000), xytext=(0, -5), verticalalignment="top", horizontalalignment='center', textcoords='offset points')
 
-    ax.arrow(200000,200000,30000,0, facecolor="#aa0000", edgecolor='#aa0000', width=0)
-    ax.text(116000*2,201000, 'East', verticalalignment="bottom", horizontalalignment='left')
+    ax.arrow(arrow_centre_x,arrow_centre_y,arrow_length,0, facecolor="#aa0000", edgecolor='#aa0000', width=1000)
+    ax.annotate('East', xy=(arrow_centre_x + arrow_length + 2000,arrow_centre_y), xytext=(5, 0), verticalalignment="center", horizontalalignment='left', textcoords='offset points')
+
+    return ax
+
+
+def display_guides(ax, object_guidetab, scale_factor, tail_length):
+
+    """
+    Display the guides
+    """
+
+    for probe_number, hexabundle_x, hexabundle_y, angle in zip(
+        object_guidetab['PROBENUM'], object_guidetab['CENX'], object_guidetab['CENY'], object_guidetab['ANGS']):
+
+        rotation_angle = angle - np.pi/2
+        ax.add_patch(Circle((hexabundle_x,hexabundle_y), scale_factor*400, edgecolor='#009900', facecolor='#009900', zorder=5))
+        ax.text(hexabundle_x, hexabundle_y, f"G{probe_number - 21}",
+                verticalalignment='center', horizontalalignment='center', zorder=10)
+        line_hexabundle_tail = [(hexabundle_x, hexabundle_y), (hexabundle_x + tail_length * np.sin(rotation_angle), hexabundle_y - tail_length * np.cos(rotation_angle))]
+        ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=1, zorder=1)
 
     return ax

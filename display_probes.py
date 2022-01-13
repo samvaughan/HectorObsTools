@@ -35,10 +35,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     # parser.add_argument("CCD")
-    parser.add_argument("file_number", type=int)
-    parser.add_argument("--config-file")
-    parser.add_argument("--outfile")
-    parser.add_argument("-s", "--sigma-clip", action='store_true')
+    parser.add_argument("file_number", type=int, help='The object frame number you want to display')
+    parser.add_argument("--config-file", help="A .yaml file which contains parameters and filenames for the code. See hector_display_config.yaml for an example")
+    parser.add_argument("--outfile", help='Filename to save the plot to. If not given, display the plot instead')
+    parser.add_argument("-s", "--sigma-clip", action='store_true', help='Turn on sigma clipping. Can also be set in the config file')
     args = parser.parse_args()
 
     obs_number = args.file_number
@@ -87,6 +87,7 @@ if __name__ == "__main__":
     print("--->")
 
     scale_factor = 18
+    hexabundle_tail_length = scale_factor * 1000
 
     fig = plt.figure(figsize=(10,10))
     
@@ -124,8 +125,8 @@ if __name__ == "__main__":
         x_rotated = -1 * (np.cos(rotation_angle) * x - np.sin(rotation_angle) * y)
         y_rotated = -1 * (np.sin(rotation_angle) * x + np.cos(rotation_angle) * y)
 
-        length = scale_factor * 1000
-        line_hexabundle_tail = [(mean_x, mean_y), (mean_x + length * np.sin(rotation_angle), mean_y - length * np.cos(rotation_angle))]
+        
+        line_hexabundle_tail = [(mean_x, mean_y), (mean_x + hexabundle_tail_length * np.sin(rotation_angle), mean_y - hexabundle_tail_length * np.cos(rotation_angle))]
         ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=2, zorder=1, alpha=0.5)
 
 
@@ -137,17 +138,10 @@ if __name__ == "__main__":
                 verticalalignment="bottom", horizontalalignment='center')
 
 
+    # Add the guides
+    ax = utils.display_guides(ax, object_guidetab, scale_factor=scale_factor, tail_length=hexabundle_tail_length)
 
-    for probe_number, hexabundle_x, hexabundle_y, angle in zip(
-        object_guidetab['PROBENUM'], object_guidetab['CENX'], object_guidetab['CENY'], object_guidetab['ANGS']):
-
-        rotation_angle = angle - np.pi/2
-        ax.add_patch(Circle((hexabundle_x,hexabundle_y), scale_factor*250, edgecolor='#009900', facecolor='none'))
-        ax.text(hexabundle_x, hexabundle_y, f"G{probe_number - 21}",
-                verticalalignment='center', horizontalalignment='center')
-        line_hexabundle_tail = [(hexabundle_x, hexabundle_y), (hexabundle_x + length * np.sin(rotation_angle), hexabundle_y - length * np.cos(rotation_angle))]
-        ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=1, zorder=1)
-
+    # And add some N/E arrows
     ax = utils.add_NE_arrows(ax)
 
     plt.tight_layout()
