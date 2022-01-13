@@ -607,10 +607,6 @@ if __name__ == "__main__":
         else:
             object_fibtab, object_guidetab, object_spec, spec_id_alive = object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H
 
-            
-
-        swapped_probe = swaps[Probe]
-        print(f"Probe = {Probe}, swapped with {swapped_probe}")
         mask = (object_fibtab.field('TYPE')=="P") & (object_fibtab.field('SPAX_ID')==Probe)
         Probe_data = object_spec[spec_id_alive[mask]]
 
@@ -662,11 +658,11 @@ if __name__ == "__main__":
     ax.text(116000*2,201000, 'East', verticalalignment="bottom", horizontalalignment='left')
 
     plt.tight_layout()
-    if figfile:
-        plt.savefig(figfile, bbox_inches='tight', pad_inches=0.3)
-    #fig.show()
+    # if figfile:
+    #     plt.savefig(figfile, bbox_inches='tight', pad_inches=0.3)
+    # #fig.show()
 
     print("---> END")
     #plt.show()
-    fig.savefig(f"/Users/samvaughan/Desktop/rotation_plots/{object_file.stem}_rot_{rot_dict[f'{object_file.stem[-2:]}']}.pdf", bbox_inches='tight')
+    fig.savefig(f"/Users/samvaughan/Desktop/rotation_plots/{obs_number}_rot_{rot_dict[f'{obs_number}']}.pdf", bbox_inches='tight')
     plt.close()
