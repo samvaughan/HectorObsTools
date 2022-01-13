@@ -579,7 +579,9 @@ if __name__ == "__main__":
     #     #name of probes for AAOmega
     #     Probe_list = ['I','J','K','L','M','N','O','P','Q','R','S','T','U']
 
-    
+    object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = get_alive_fibres(flat_file_AAOmega, object_file_AAOmega)
+    object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = get_alive_fibres(flat_file_Hector, object_file_Hector)
+
     # Plot the data
     print("---> Plotting...")
     print("--->")
@@ -597,8 +599,6 @@ if __name__ == "__main__":
 
     swaps = dict(A="G", B="B", C="D",D="C", E="F", F="E", G="A", H="N", I="K", J="J", K="I", L="M", M="L", N="H", O="P", P="O", Q="Q", R="T", S="S", T="R", U="U")
 
-    object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = get_alive_fibres(flat_file_AAOmega, object_file_AAOmega)
-    object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = get_alive_fibres(flat_file_Hector, object_file_Hector)
 
     for Probe in list(string.ascii_uppercase[:21]):
 
@@ -607,22 +607,30 @@ if __name__ == "__main__":
         else:
             object_fibtab, object_guidetab, object_spec, spec_id_alive = object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H
 
-            
 
         swapped_probe = swaps[Probe]
-        print(f"Probe = {Probe}, swapped with {swapped_probe}")
+
+        if swapped_probe in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
+            swapped_object_fibtab, swapped_object_guidetab, swapped_object_spec, swapped_spec_id_alive = object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A
+        else:
+            swapped_object_fibtab, swapped_object_guidetab, swapped_object_spec, swapped_spec_id_alive = object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H
+
+        print(f"Probe is {Probe}, swapped_probe is {swapped_probe}")
+        #print(f"Probe = {Probe}, swapped with {swapped_probe}")
         mask = (object_fibtab.field('TYPE')=="P") & (object_fibtab.field('SPAX_ID')==Probe)
+        swapped_mask = (swapped_object_fibtab.field('TYPE')=="P") & (swapped_object_fibtab.field('SPAX_ID')==swapped_probe)
+        
         Probe_data = object_spec[spec_id_alive[mask]]
 
         #mask = np.logical_and(object_fibtab.field('TYPE')=="P",\object_fibtab['SPAX_ID']==Probe)
 
-        mean_x = np.mean(object_fibtab.field('MAGX')[mask])
-        mean_y = np.mean(object_fibtab.field('MAGY')[mask])
+        mean_x = np.mean(swapped_object_fibtab.field('MAGX')[swapped_mask])
+        mean_y = np.mean(swapped_object_fibtab.field('MAGY')[swapped_mask])
 
         x = 1 * (object_fibtab.field('FIB_PX')[mask])
         y = 1 * (object_fibtab.field('FIB_PY')[mask])
 
-        angle = np.unique(object_fibtab.field('ANGS')[mask])
+        angle = np.unique(swapped_object_fibtab.field('ANGS')[swapped_mask])
         assert len(angle) == 1, 'Must only have one angle per probe'
 
         rotation_angle = angle - np.pi/2
@@ -632,6 +640,8 @@ if __name__ == "__main__":
 
         length = scale_factor * 1000
         line_hexabundle_tail = [(mean_x, mean_y), (mean_x + length * np.sin(rotation_angle), mean_y - length * np.cos(rotation_angle))]
+
+        #import ipdb; ipdb.set_trace()
         ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=2, zorder=1, alpha=0.5)
 
 
@@ -639,8 +649,7 @@ if __name__ == "__main__":
         ax.axis([-140000*2, 140000*2, -140000*2, 140000*2])
         plt.setp(ax.get_xticklabels(), visible=False)
         plt.setp(ax.get_yticklabels(), visible=False)
-        ax.text(mean_x, mean_y - scale_factor*750*2, "Probe " + str(Probe),\
-                verticalalignment="bottom", horizontalalignment='center')
+        ax.text(mean_x, mean_y - scale_factor*750*2, f"Probe {Probe} in position {swapped_probe}",               verticalalignment="bottom", horizontalalignment='center')
 
 
 
@@ -662,11 +671,12 @@ if __name__ == "__main__":
     ax.text(116000*2,201000, 'East', verticalalignment="bottom", horizontalalignment='left')
 
     plt.tight_layout()
-    if figfile:
-        plt.savefig(figfile, bbox_inches='tight', pad_inches=0.3)
-    #fig.show()
+    # if figfile:
+    #     plt.savefig(figfile, bbox_inches='tight', pad_inches=0.3)
+    # #fig.show()
 
     print("---> END")
     #plt.show()
-    fig.savefig(f"/Users/samvaughan/Desktop/rotation_plots/{object_file.stem}_rot_{rot_dict[f'{object_file.stem[-2:]}']}.pdf", bbox_inches='tight')
+    #fig.savefig(f"/Users/samvaughan/Desktop/rotation_plots/{object_file.stem}_rot_{rot_dict[f'{object_file.stem[-2:]}']}.pdf", bbox_inches='tight')
+    fig.savefig("swapped.pdf")
     plt.close()
