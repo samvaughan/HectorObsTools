@@ -156,8 +156,8 @@ if __name__ == "__main__":
         rotation_angle_original = original_probe_angle - np.pi/2
         rotation_angle = angle - np.pi/2
 
-        x_rotated = -1 * (np.cos(rotation_angle_original) * x - np.sin(rotation_angle_original) * y)
-        y_rotated = -1 * (np.sin(rotation_angle_original) * x + np.cos(rotation_angle_original) * y)
+        x_rotated = -1 * (np.cos(rotation_angle) * x - np.sin(rotation_angle) * y)
+        y_rotated = -1 * (np.sin(rotation_angle) * x + np.cos(rotation_angle) * y)
 
         length = scale_factor * 1000
         line_hexabundle_tail = [(mean_x, mean_y), (mean_x + length * np.sin(rotation_angle), mean_y - length * np.cos(rotation_angle))]
