@@ -3,41 +3,21 @@
 # Until the Hector red arm is fixed, this should be set to 'blue'
 red_or_blue : 'blue'
 
-flat_file_Hector : "/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_3/12jan30005.fits"
-flat_file_AAOmega : "/Volumes/OtherFiles/Science/Hector/Observations/220112/ccd_1/12jan10005.fits"
+flat_file_Hector : "/Volumes/OtherFiles/Science/Hector/Observations/220114/ccd_3/14jan30005.fits"
+flat_file_AAOmega : "/Volumes/OtherFiles/Science/Hector/Observations/220114/ccd_1/14jan10005.fits"
 
 # Now load the object file
 # We need the directory where the ccd folders are (e.g. in this folder there should be ccd_1, ccd_2, ccd_3, etc)
-data_dir : "/Volumes/OtherFiles/Science/Hector/Observations/220112"
+data_dir : "/Volumes/OtherFiles/Science/Hector/Observations/220114"
 # The prefix of every file- probably the date, e.g. 12jan
-file_prefix : "12jan" 
+file_prefix : "14jan" 
 
 # Note that these options can be overwritten from the command line
 sigma_clip : True # or can use --sigma-clip or -s on the command line
 
-# The swaps dictionary
-# Left column hexabundle has actually been placed where the right column hexabundle was previously
+# The swaps dictionary.
+# This can be a file or a yaml dictionary
+# If a yaml dictionary, Left column hexabundle has actually been placed where the right column hexabundle was previously
 # so "A" : "G" means A is now where G is supposed to be
-swaps : 
-    "A" : "G"
-    "B" : "B"
-    "C" : "D"
-    "D" : "C"
-    "E" : "F"
-    "F" : "E"
-    "G" : "A"
-    "H" : "N"
-    "I" : "K"
-    "J" : "J"
-    "K" : "I"
-    "L" : "M"
-    "M" : "L"
-    "N" : "H"
-    "O" : "P"
-    "P" : "O"
-    "Q" : "Q"
-    "R" : "T"
-    "S" : "S"
-    "T" : "R"
-    "U" : "U"
+swaps_dictionary : "/Users/samvaughan/Desktop/rotation_plots/saved_swap_dictionaries/14th_Jan_swaps_3.yaml"
 

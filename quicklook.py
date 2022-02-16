@@ -9,15 +9,15 @@ from pathlib import Path
 import matplotlib.patches as patches
 
 
-def plot_plate(file_number=21, annotate=False, hexabundle_scale_factor = 30, marker_size=10, alpha=0.1):
+def plot_plate(hdu_AAOmega, hdu_Spectre, title, annotate=True, hexabundle_scale_factor = 30, marker_size=10, alpha=0.1):
     
     fig, ax = plt.subplots(constrained_layout=True, figsize=(10, 8))
 
-    hdu_AAOmega = fits.open(f"/Volumes/OtherFiles/09dec200{file_number}red.fits")
-    hdu_Spectre = fits.open(f"/Volumes/OtherFiles/09dec400{file_number}red.fits")
+    # hdu_AAOmega = fits.open(f"/Volumes/OtherFiles/16jan200{file_number}red.fits")
+    # hdu_Spectre = fits.open(f"/Volumes/OtherFiles/16jan400{file_number}red.fits")
 
-    ax.set_title(f"Filenames: 09dec200{file_number}.fits & 09dec400{file_number}.fits")
-    plate = patches.Circle(xy=(0, 0), radius=236*1000, edgecolor='k', facecolor='None', linewidth=3.0)
+    ax.set_title(f"{title}")
+    plate = patches.Circle(xy=(0, 0), radius=264/2*2000, facecolor="#cccccc", edgecolor='#000000', linewidth=3.0)
     ax.add_patch(plate)
     for hexabundle in list(string.ascii_uppercase[:21]):
         if hexabundle in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
@@ -34,30 +34,23 @@ def plot_plate(file_number=21, annotate=False, hexabundle_scale_factor = 30, mar
 
         flux_values = np.nanmedian(data, axis=1)[mask]
 
-        # xi_1d = np.arange(df.loc[mask, 'FIBPOS_X'].min(), df.loc[mask, 'FIBPOS_X'].max())
-        # yi_1d = np.arange(df.loc[mask, 'FIBPOS_Y'].min(), df.loc[mask, 'FIBPOS_Y'].max())
-
-        # xi, yi = np.meshgrid(xi_1d, yi_1d)
-
-
-        
-
-        # vals = si.griddata((df.loc[mask, 'FIBPOS_X'], df.loc[mask, 'FIBPOS_Y']), values=flux_values, xi=(xi, yi),method='cubic')
-
-        
         #ax.imshow(np.flipud(vals), extent=np.array([xi.min(), xi.max(), yi.min(), yi.max()]), cmap='plasma')
-        centre_x = df.loc[mask, 'FIBPOS_X'].mean()
-        centre_y = df.loc[mask, 'FIBPOS_Y'].mean()
-        hexabundle_xvals = (df.loc[mask, 'FIBPOS_X'] - centre_x) * hexabundle_scale_factor# + centre_x
-        hexabundle_yvals = (df.loc[mask, 'FIBPOS_Y'] - centre_y) * hexabundle_scale_factor# + centre_y
+        centre_x = df.loc[mask, 'MAGX'].mean()
+        centre_y = df.loc[mask, 'MAGY'].mean()
+
+        x = (df.loc[mask, 'FIB_PX']) * hexabundle_scale_factor
+        y = (df.loc[mask, 'FIB_PY']) * hexabundle_scale_factor
+
+        angle = np.unique(df.loc[mask, 'ANGS'])
+        assert len(angle) == 1, 'Must only have one angle per probe'
+        rotation_angle = angle - np.pi/2
+
+        x_rotated = -1 * (np.cos(rotation_angle) * x - np.sin(rotation_angle) * y)
+        y_rotated = -1 * (np.sin(rotation_angle) * x + np.cos(rotation_angle) * y)
 
 
-        angs = df.loc[mask, 'ANGS'].mean() + np.pi
-        x_rot = np.cos(angs) * hexabundle_xvals + np.sin(angs) * hexabundle_yvals # Flipped this
-        y_rot = -np.sin(angs) * hexabundle_xvals + np.cos(angs) * hexabundle_yvals
-
-        X = x_rot + centre_x
-        Y = y_rot + centre_y
+        X = x_rotated + centre_x
+        Y = y_rotated + centre_y
 
         
 
@@ -78,29 +71,19 @@ def plot_plate(file_number=21, annotate=False, hexabundle_scale_factor = 30, mar
         #fib_num_mask = df.loc[mask, 'FIBNUM'].isin([1, 3, 11, 25,45])
         #ax.scatter(X[fib_num_mask], Y[fib_num_mask], c='r', edgecolors='k', alpha=0.8)
 
-        #Plot a line of angle angs
-        length = 50000
-        ax.plot([centre_x, centre_x + length * np.cos(angs)], [centre_y, centre_y + length * np.sin(angs)], c='k', linewidth=3.0, alpha=0.5, zorder=1)
-
-        #Plot a line of angle PORIENT
-        porient = np.radians(df.loc[mask, 'PORIENT'].mean())
-        ax.plot([centre_x, centre_x + length * np.cos(porient)], [centre_y, centre_y + length * np.sin(porient)], c='cyan', linewidth=3.0, alpha=1, zorder=1)
+        #Plot a line of angle rotation_angle
+        length = 1000 * hexabundle_scale_factor
+        ax.plot([centre_x, centre_x + length * np.cos(rotation_angle)], [centre_y, centre_y + length * np.sin(rotation_angle)], c='k', linewidth=3.0, alpha=0.5, zorder=1)
     
     return fig, ax
-        #ax.set_title(f'{hexabundle}')
-
-
-
-    
-
 
 
 # ###All hexabundles close up
 def plot_hexas():
     fig, axs = plt.subplots(ncols=5, nrows=6, figsize=(15, 10), constrained_layout=True)
 
-    hdu_AAOmega = fits.open("/Volumes/OtherFiles/09dec20021red.fits")
-    hdu_Spectre = fits.open("/Volumes/OtherFiles/09dec40021red.fits")
+    hdu_AAOmega = fits.open("/Volumes/OtherFiles/16jan20021red.fits")
+    hdu_Spectre = fits.open("/Volumes/OtherFiles/16jan40021red.fits")
 
     for ax, hexabundle in zip(axs.ravel(), list(string.ascii_uppercase[:21])):
         if hexabundle in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
@@ -195,18 +178,33 @@ def plot_rotation(hexabundle):
 if __name__ == "__main__":
 
     from tqdm import tqdm
-    rotation_dict = {100:'29', 150:'27', 200:'25', 250:'23', 300:'21', 350:'24', 400:"26", 450:'28', 500:'30'}
-    for rotation in tqdm(rotation_dict):
-        fname = Path(f"/Volumes/OtherFiles/09dec200{rotation_dict[rotation]}red.fits")
-        if fname.exists():
-            fig,ax = plot_plate(file_number=rotation_dict[rotation], annotate=True, hexabundle_scale_factor=40, marker_size=15, alpha=0.0)
-            ax.set_title(f"{rotation} millidegrees")
-            fig.savefig(f"RotationPlots/{rotation}.pdf", bbox_inches='tight')
-            plt.close()
-        else:
-            print(f"No Data for {rotation}")
+    #rotation_dict = {100:29, 150:27, 200:25, 250:23, 300:21, 350:24, 400:26, 450:28, 500:30}
+    
+    # for rotation in tqdm(rotation_dict):
+    #     fname = Path(f"/Volumes/OtherFiles/09dec200{rotation_dict[rotation]}red.fits")
+    #     if fname.exists():
+    #         fig,ax = plot_plate(file_number=rotation_dict[rotation], annotate=True, hexabundle_scale_factor=40, marker_size=15, alpha=0.0)
+    #         ax.set_title(f"{rotation} millidegrees")
+    #         fig.savefig(f"RotationPlots/{rotation}.pdf", bbox_inches=tight')
+    #         plt.close()
+    #     else:
+    #         print(f"No Data for {rotation}")
+    #         continue
+    # pass
+
+    # Make a plot of the entire Hector plate
+    #/Volumes/OtherFiles/Science/Hector/Observations/Reduced/220116
+    #rotation_dict = {29:100, 27:150, 25:200, 23:250, 21:300, 24:350, 26:400, 28:450, 30:500}
+    rotation_dict = {28:700, 29:750}
+    #field_numbers = [28, 29]
+    for file_number in rotation_dict.keys():
+        try:
+            hdu_AAOmega = fits.open(f"/Volumes/OtherFiles/Science/Hector/Observations/Reduced/220116/ccd_1/16jan100{file_number}red.fits")
+            hdu_Spectre = fits.open(f"/Volumes/OtherFiles/Science/Hector/Observations/Reduced/220116/ccd_3/16jan300{file_number}red.fits")
+        except FileNotFoundError:
             continue
-    pass
-    #plot_rotation('S')
-    #plot_plate()
-    #plot_hexas()
+
+        title = f"Frame {file_number}"
+
+        fig, ax = plot_plate(hdu_AAOmega, hdu_Spectre, title, annotate=True, hexabundle_scale_factor=40, marker_size=10, alpha=0.1)
+        fig.savefig(f"/Users/samvaughan/Desktop/rotation_plots/16jan/rot_{rotation_dict[file_number]}_frame_{file_number}.pdf")

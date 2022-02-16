@@ -73,14 +73,16 @@ if __name__ == "__main__":
     object_file_Hector = Path(config['data_dir']) / f"ccd_{hector_ccd}" / f"{config['file_prefix']}{hector_ccd}{obs_number:04}.fits"
     object_file_AAOmega = Path(config['data_dir']) / f"ccd_{aaomega_ccd}" / f"{config['file_prefix']}{aaomega_ccd}{obs_number:04}.fits"
 
+    plot_fibre_traces = True
+
     if not object_file_Hector.exists():
         raise FileNotFoundError(f"The Hector file seems to not exist: {object_file_Hector} not found")
     if not object_file_AAOmega.exists():
         raise FileNotFoundError(f"The AAomega file seems to not exist: {object_file_AAOmega} not found")
 
     # Get the fibre tables and find the tramlines:
-    object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = utils.get_alive_fibres(flat_file_AAOmega, object_file_AAOmega, sigma_clip=sigma_clip, IFU="unknown", log=True, pix_waveband=100, pix_start="unknown", plot_fibre_trace = False)
-    object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = utils.get_alive_fibres(flat_file_Hector, object_file_Hector, sigma_clip=sigma_clip, IFU="unknown", log=True, pix_waveband=100, pix_start="unknown", plot_fibre_trace = False)
+    object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = utils.get_alive_fibres(flat_file_AAOmega, object_file_AAOmega, sigma_clip=sigma_clip, IFU="unknown", log=True, pix_waveband=100, pix_start="unknown", plot_fibre_trace = plot_fibre_traces)
+    object_fibtab_H, object_guidetab_H, object_spec_H, spec_id_alive_H = utils.get_alive_fibres(flat_file_Hector, object_file_Hector, sigma_clip=sigma_clip, IFU="unknown", log=True, pix_waveband=100, pix_start="unknown", plot_fibre_trace = plot_fibre_traces)
 
     # Plot the data
     print("---> Plotting...")

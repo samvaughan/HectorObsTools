@@ -82,7 +82,22 @@ if __name__ == "__main__":
 
 
     # Get the swaps dictionary
-    swaps = config['swaps']
+    # If it's a dictionary, use it as normal
+    # If it's a filename pointing to a yaml file, load that
+    swaps = config['swaps_dictionary']
+    if type(swaps) == str:
+        with open(swaps, 'r') as g:
+            swaps = yaml.safe_load(g)['swaps_dictionary']
+    
+    # Do some checks on it
+    # Check we have the right number of key/value pairs
+    assert len(swaps) == 21, f"Seem to have an incorrect number of elements in the swap list: {len(swaps)} instead of 21"
+    # Check that no hexabundles are repeated
+    assert len(list(swaps.keys())) == len(set(swaps.keys())), "We seem to have a repeated value in the LHS of the swaps dictionary"
+    assert len(list(swaps.values())) == len(set(swaps.values())), "We seem to have a repeated value in the RHS of the swaps dictionary"
+    # And check that the values are equal to the set of letters from A to U
+    assert set(swaps.keys()) == set(string.ascii_uppercase[:21]), "The LHS of the swaps list is incorrect- are there any missing hexabundle letters?"
+    assert set(swaps.values()) == set(string.ascii_uppercase[:21]), "The RHS of the swaps list is incorrect- are there any missing hexabundle letters?"
 
     # Get the fibre tables and find the tramlines:
     object_fibtab_A, object_guidetab_A, object_spec_A, spec_id_alive_A = utils.get_alive_fibres(flat_file_AAOmega, object_file_AAOmega, sigma_clip=sigma_clip)
@@ -170,7 +185,7 @@ if __name__ == "__main__":
         ax.plot(*zip(*line_hexabundle_tail), c='k', linewidth=1, zorder=1)
 
     ax = utils.add_NE_arrows(ax)
-    
+
     plt.tight_layout()
     # if figfile:
     #     plt.savefig(figfile, bbox_inches='tight', pad_inches=0.3)
